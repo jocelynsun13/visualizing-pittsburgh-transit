@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+  <meta charset="utf-8">
+  <title>Port Authority Routes</title>
+  
+  <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.js"></script>
+  <script src="./L.D3SvgOverlay.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/leaflet.css" />
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+
+<style>
+
+ body {
+      padding: 0;
+      margin: 0;
+  }
+  html, body, #map {
+      height: 100%;
+      width: 100%;
+  }
+
+  #title {
+    color: black;
+    position: absolute;
+    top: 20px;
+    left: 60px;
+    font-size: 26px;
+  }
+
+  .route {
+    opacity: 0.3;
+    fill: none;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+</style>
+
+<body>
+
+  <div id="map"></div>
+  <div id="title">Port Authority Routes</div>
+
+
+  <script>
+
+    // TaivfKriPcQBKu9GjBe5FBeUK
+
+
+    window.map = new L.Map('map', {
+        center: [40.449690349293654, -79.96192932128906], 
+        zoom: 11
+      }),
+    window.tileLayer = new L.TileLayer('http://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png');
+
+    window.tileLayer.setOpacity(0.6);
+    map.addLayer(tileLayer);
+
+    map._initPathRoot();
+
+    queue()
+      .defer(d3.json, 'routes.json')
+      .await(function(error, routes) { 
+        if (error) throw error;
+
+        window.routes = routes;
+
+        var colors = {
+                0: "rgba(102,102,102,1)",
+                B: "rgba(70,130,180,1)",
+                Y: "rgba(254,196,79,1)",
+                P: "rgba(117,107,177,1)",
+                G: "rgba(44,162,95,1)",
+                O: "rgba(217,95,14,1)",
+                R: "rgba(240,59,32,1)",
+                D: "rgba(0,0,0,1)",
+                M: "rgba(0,0,0,1)"
+              };
+
+        var svg_overlay = L.d3SvgOverlay(function(selection, projection){
+
+          var route_paths = selection.selectAll('path')
+              .data(routes.features);
+
+          route_paths.enter().append('path')
+              .attr('class', 'route')
+              .attr('d', d3.geo.path()
+                  .projection(function(l){
+                    var p = projection.latLngToLayerPoint({ lon: l[0], lat:  l[1] });
+                    return [p.x,p.y];
+                  })
+                )
+              .attr('stroke', function(d){
+                  return colors[d.properties.route_id.substr(0,1)];
+                });
+
+          route_paths.exit().remove();
+        });
+
+        svg_overlay.addTo(map);
+
+      });
+  </script>
